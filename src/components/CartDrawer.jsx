@@ -43,7 +43,7 @@ export default function CartDrawer({ isOpen, onClose, cart, onRemove }) {
                   onClick={() => alert("Connecting to Stripe API Gateway...")}
                   className="w-full bg-zinc-900 text-white font-black py-5 rounded-xl flex items-center justify-center gap-3 hover:bg-rose-600 transition-all shadow-xl shadow-rose-600/10 uppercase tracking-[0.2em] text-xs"
                 >
-                  <CreditCard size={18} /> Checkout
+                  <CreditCard size={18} /> Check Out
             </button>
           </div>
         )}
