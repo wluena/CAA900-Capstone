@@ -57,3 +57,7 @@
 body {
   @apply bg-white text-zinc-900 antialiased;
 }
+
+:root {
+  --color-primary: #e11d48; /* The red color in your logo */
+}

@@ -20,7 +20,7 @@ export default function ProductCard({ product, onSelect, onAdd }) {
         </h2>
 
         <div className="mt-auto flex justify-between items-center border-t border-zinc-100 pt-4">
-          <span className="text-2xl font-black text-zinc-900">${product.price}</span>
+          <span className="text-2xl font-black text-zinc-900">${Number(product.price).toLocaleString()}</span>
           <button 
             onClick={(e) => { 
               e.stopPropagation(); 

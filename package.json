@@ -11,10 +11,13 @@
     "init-tailwind": "tailwindcss init"
   },
   "dependencies": {
+    "@aws-amplify/ui-react": "^6.15.0",
     "@tailwindcss/vite": "^4.1.18",
+    "aws-amplify": "^6.16.2",
     "lucide-react": "^0.563.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "stripe": "^20.3.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
@@ -29,5 +32,18 @@
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18",
     "vite": "^7.2.4"
-  }
+  },
+  "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
+  "main": "eslint.config.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wluena/CAA900-Capston.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/wluena/CAA900-Capston/issues"
+  },
+  "homepage": "https://github.com/wluena/CAA900-Capston#readme"
 }
