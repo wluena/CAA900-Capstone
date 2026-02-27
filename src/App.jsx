@@ -13,6 +13,7 @@ import { X } from 'lucide-react'
 import ProductCard from './components/ProductCard'
 import ProductModal from './components/ProductModal'
 import CartDrawer from './components/CartDrawer'
+import OrdersDrawer from './components/OrdersDrawer'
 
 
 // ASSETS & CONSTANTS
@@ -34,6 +35,36 @@ function App() {
   
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [showOrdersDrawer, setShowOrdersDrawer] = useState(false);
+
+  const fetchOrdersAndOpenDrawer = async () => {
+  // 1. Make sure the user is logged in
+  if (!authUser?.userId) {
+    setShowAuthModal(true);
+    return;
+  }
+
+  try {
+    // 2. Fetch from your new API Gateway URL
+    const response = await fetch(
+      `${APP_CONFIG.API_URL}/my-orders?userId=${authUser.userId}`
+    );
+    
+    const data = await response.json();
+    
+    // 3. Save the data to state (Matches the useState above)
+    setOrders(data); 
+    
+    // 4. Open the drawer
+    setShowOrdersDrawer(true);
+    
+  } catch (err) {
+    console.error("Failed to load orders:", err);
+    alert("Could not load your orders. Please try again.");
+  }
+};
+  
 
   // --- 1. STRIPE SUCCESS DETECTION ---
   useEffect(() => {
@@ -178,21 +209,26 @@ useEffect(() => {
         </div>
         <div className="flex items-center gap-6">
           {authUser ? (
-            <div className="flex flex-col items-end">
-              <span className="text-[10px] font-black uppercase tracking-tight">
-                {userEmail || authUser.signInDetails?.loginId || 'Member'}
-              </span>
-              <button onClick={amplifySignOut} className="text-[9px] text-rose-500 font-bold hover:underline tracking-widest">
-                SIGN OUT
+            <div className="flex items-center gap-6">
+              {/* My Orders Toggle */}
+              <button 
+                onClick={() => fetchOrdersAndOpenDrawer()} // Function to fetch and show drawer
+                className="text-[10px] font-black uppercase tracking-widest hover:text-rose-600 transition-colors"
+              >
+                My Orders
               </button>
+
+              <div className="flex flex-col items-end border-l pl-6 border-zinc-200">
+                <span className="text-[10px] font-black uppercase tracking-tight">
+                  {userEmail || 'Member'}
+                </span>
+                <button onClick={amplifySignOut} className="text-[9px] text-rose-500 font-bold hover:underline tracking-widest">
+                  SIGN OUT
+                </button>
+              </div>
             </div>
           ) : (
-            <button 
-              onClick={() => setShowAuthModal(true)} // This triggers the Cognito overlay
-              className="text-[10px] font-black uppercase tracking-widest bg-zinc-900 text-white px-5 py-2.5 rounded-lg hover:bg-rose-600 transition-all active:scale-95"
-            >
-              SIGN IN
-            </button>
+            <button onClick={() => setShowAuthModal(true)} className="...">SIGN IN</button>
           )}
           <button onClick={() => setShowCartDrawer(true)} className="p-2.5 bg-zinc-100 rounded-full relative hover:bg-zinc-200 transition-colors">
             <ShoppingCart size={20} />
@@ -248,6 +284,7 @@ useEffect(() => {
             ))}
           </div>
         )}
+        
       </main>
 
       <ProductModal 
@@ -265,6 +302,12 @@ useEffect(() => {
         onClearCart={() => setCart([])}
         // NOTE: onCheckout is now handled inside the Checkout component itself
         // because we updated Checkout.jsx to handle the Stripe redirect.
+      />
+
+      <OrdersDrawer 
+        isOpen={showOrdersDrawer} 
+        onClose={() => setShowOrdersDrawer(false)} 
+        orders={orders} 
       />
 
       {/* LOGIN OVERLAY */}
