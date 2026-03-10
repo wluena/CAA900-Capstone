@@ -63,10 +63,12 @@ export default function CartDrawer({ isOpen, onClose, cart, onRemove, onClearCar
                 /* 1. LOGGED IN: Show the Checkout Component */
                 <Checkout 
                   cart={cart} 
-                  userId={user?.userId} 
+                  userId={user?.userId} // Pass the whole user object
+                  userEmail={user?.signInDetails?.loginId || user?.attributes?.email} // Add this
                   onClearCart={onClearCart} 
                   onSuccess={(orderId) => {
                     onClose();
+                    // Using a slice for a cleaner ID display
                     const displayId = String(orderId).slice(0, 8).toUpperCase();
                     alert(`ORDER #${displayId} PLACED SUCCESSFULLY!`);
                   }}

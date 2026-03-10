@@ -5,24 +5,28 @@ const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 
 export const handler = async (event) => {
-    // Get userId from query parameters: ?userId=xxx
-    const userId = event.queryStringParameters?.userId;
+    // 1. Extract the secure userId (sub) from the Cognito Authorizer
+    // This is much safer than getting it from the query parameters.
+    const authenticatedUserId = event.requestContext?.authorizer?.claims?.sub;
+    const userEmail = event.requestContext?.authorizer?.claims?.email;
 
-    if (!userId) {
+    if (!authenticatedUserId) {
         return { 
-            statusCode: 400, 
-            body: JSON.stringify({ message: "userId query parameter is required" }) 
+            statusCode: 401, 
+            body: JSON.stringify({ message: "Unauthorized: No valid session found." }) 
         };
     }
 
+    console.log(`Fetching orders for user: ${userEmail} (${authenticatedUserId})`);
+
     const params = {
         TableName: "Orders",
-        IndexName: "userId-index", // Use the index we just created
+        IndexName: "userId-index", 
         KeyConditionExpression: "userId = :u",
         ExpressionAttributeValues: {
-            ":u": userId
+            ":u": authenticatedUserId // Use the ID from the token
         },
-        ScanIndexForward: false // Sorts by date (newest first) if createdAt is present
+        ScanIndexForward: false // Sorts by date (newest first)
     };
 
     try {
@@ -40,6 +44,7 @@ export const handler = async (event) => {
         console.error("Query Error:", error);
         return {
             statusCode: 500,
+            headers: { "Access-Control-Allow-Origin": "*" },
             body: JSON.stringify({ error: "Could not fetch orders" })
         };
     }

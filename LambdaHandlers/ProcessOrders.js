@@ -3,27 +3,37 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export const handler = async (event) => {
     try {
-        // Log the incoming event to CloudWatch so we can see what React is sending
-        console.log("Event Received:", event.body);
-        
+        // 1. SECURE IDENTITY CHECK
+        // We pull the verified ID from Cognito, not the request body
+        const authenticatedUserId = event.requestContext?.authorizer?.claims?.sub;
+        const userEmail = event.requestContext?.authorizer?.claims?.email;
+
+        if (!authenticatedUserId) {
+            return { 
+                statusCode: 401, 
+                headers: { "Access-Control-Allow-Origin": "*" },
+                body: JSON.stringify({ message: "Unauthorized" }) 
+            };
+        }
+
         const body = JSON.parse(event.body);
 
-        // MINIFY the cart items to stay under 500 characters
+        // MINIFY the cart items to stay under Stripe's 500-character metadata limit
         const simplifiedItems = body.items.map(item => ({
             id: item.productId,
-            n: item.name.substring(0, 20), // Grab the first 20 chars to keep it short
+            n: item.name.substring(0, 20), 
             q: item.qty,
             p: item.price
         }));
 
+        // 2. CREATE STRIPE SESSION
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             line_items: body.items.map(item => ({
                 price_data: {
-                    currency: 'usd',
+                    currency: 'cad',
                     product_data: { 
                         name: item.name,
-                        // Stripe doesn't need the description here to process payment, name is enough
                     },
                     unit_amount: Math.round(item.price * 100),
                 },
@@ -33,20 +43,22 @@ export const handler = async (event) => {
             success_url: `${process.env.FRONTEND_URL}?success=true`,
             cancel_url: `${process.env.FRONTEND_URL}?canceled=true`,
             metadata: {
-                userId: body.userId,
+                // Use the verified IDs from Cognito here
+                userId: authenticatedUserId,
+                email: userEmail, 
                 cartItems: JSON.stringify(simplifiedItems) 
             },
+            customer_email: userEmail, // Pre-fills the Stripe email field for the user
             phone_number_collection: {
                 enabled: true,
-              },
+            },
         });
 
-        // 2. Return the URL to React
         return {
             statusCode: 200,
             headers: { 
                 "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*" // Crucial for CORS
+                "Access-Control-Allow-Origin": "*" 
             },
             body: JSON.stringify({ 
                 url: session.url
@@ -58,8 +70,7 @@ export const handler = async (event) => {
             statusCode: 500,
             headers: { "Access-Control-Allow-Origin": "*" },
             body: JSON.stringify({ 
-                error: err.message,
-                stack: err.stack 
+                error: "Unable to process checkout. Please try again."
             })
         };
     }
