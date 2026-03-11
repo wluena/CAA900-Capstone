@@ -15,8 +15,8 @@ export default function AuthModal({ isOpen, onClose }) {
           const session = await fetchAuthSession();
           const idToken = session.tokens?.idToken?.toString();
           
-          console.log("✅ JWT Successfully Setup!");
-          console.log("Token Payload:", session.tokens?.idToken?.payload);
+          //console.log("✅ JWT Successfully Setup!");
+          //console.log("Token Payload:", session.tokens?.idToken?.payload);
           
           onClose();
         } catch (err) {
