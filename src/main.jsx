@@ -5,10 +5,10 @@ import App from './App.jsx'
 
 // 1. Import the Amplify Library AND the Provider
 import { Amplify } from 'aws-amplify'
-import { Authenticator } from '@aws-amplify/ui-react' // <--- Add this
+import { Authenticator } from '@aws-amplify/ui-react'
 import '@aws-amplify/ui-react/styles.css';
 
-// 2. Configure with your specific AWS details
+// 2. Configure with specific AWS details
 Amplify.configure({
   Auth: {
     Cognito: {

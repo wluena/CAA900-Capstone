@@ -1,20 +1,24 @@
 import { Package, Calendar, ChevronRight, X } from 'lucide-react';
 
 export default function OrdersDrawer({ isOpen, onClose, orders = [] }) {
+  // 1. EXIT CLAUSE
+  // If the drawer isn't active, we return null to save browser resources.
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[110] flex justify-end">
-      {/* Backdrop */}
+      {/* 2. BACKGROUND DIMMING (BACKDROP) 
+          Uses 'backdrop-blur-sm' to give that modern, premium UI feel. */}
       <div 
         className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" 
         onClick={onClose} 
       />
       
-      {/* Drawer Panel */}
+      {/* 3. SLIDING PANEL
+          Uses Tailwind's 'animate-in' to smoothly slide from the right side of the screen. */}
       <div className="relative w-screen max-w-md bg-zinc-50 h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-500">
         
-        {/* Header */}
+        {/* --- HEADER --- */}
         <div className="p-6 border-b bg-white flex justify-between items-center">
           <div>
             <h2 className="text-xl font-black uppercase italic tracking-tighter text-zinc-900">My Orders</h2>
@@ -28,25 +32,29 @@ export default function OrdersDrawer({ isOpen, onClose, orders = [] }) {
           </button>
         </div>
 
-        {/* Orders List */}
+        {/* --- ORDERS LIST AREA --- */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+          {/* 4. EMPTY STATE: Shown when the API returns an empty array */}
           {orders.length === 0 ? (
             <div className="text-center py-32">
               <Package className="mx-auto text-zinc-200 mb-4" size={64} strokeWidth={1} />
               <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">No orders found</p>
             </div>
           ) : (
+            /* 5. DYNAMIC RENDERING: Maps through each order from the database */
             orders.map((order) => (
               <div 
                 key={order.orderId} 
                 className="bg-white p-5 rounded-3xl shadow-sm border border-zinc-100 group hover:border-rose-200 transition-all duration-300"
               >
-                {/* Order Top Bar */}
+                {/* --- ORDER METADATA --- */}
                 <div className="flex justify-between items-start mb-4">
                   <div>
+                    {/* Status Badge: Defaults to 'PROCESSED' if not explicitly set */}
                     <span className="inline-block px-2 py-0.5 rounded-full bg-rose-50 text-[8px] font-black text-rose-600 uppercase tracking-widest mb-1">
                       {order.status || 'PROCESSED'}
                     </span>
+                    {/* Order ID Sanitization: Removes the 'STRIPE-' prefix for a cleaner UI */}
                     <h3 className="text-[10px] font-bold text-zinc-400 block uppercase tracking-tight">
                       #{order.orderId.replace('STRIPE-', '')}
                     </h3>
@@ -56,7 +64,8 @@ export default function OrdersDrawer({ isOpen, onClose, orders = [] }) {
                   </span>
                 </div>
                 
-                {/* Items List */}
+                {/* 6. NESTED ITEM ITERATION
+                    Iterates through the 'items' array within each order object. */}
                 <div className="space-y-2 mb-4">
                   {(order.items || []).map((item, idx) => (
                     <div key={idx} className="flex justify-between text-[11px] text-zinc-600 font-medium">
@@ -69,17 +78,15 @@ export default function OrdersDrawer({ isOpen, onClose, orders = [] }) {
                   ))}
                 </div>
 
-                {/* Footer Info */}
+                {/* --- FOOTER INFO --- */}
                 <div className="pt-4 border-t border-zinc-50 flex justify-between items-center">
                   <div className="flex items-center gap-1.5 text-zinc-400">
                     <Calendar size={12} strokeWidth={2.5} />
                     <span className="text-[10px] font-bold uppercase tracking-tight">
+                      {/* 7. DATE FORMATTING: Converts the ISO timestamp to a readable local date */}
                       {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'Recent'}
                     </span>
                   </div>
-                  {/*<button className="text-[10px] font-black text-zinc-900 group-hover:text-rose-600 flex items-center gap-1 transition-colors">
-                    DETAILS <ChevronRight size={12} strokeWidth={3} />
-                  </button>*/}
                 </div>
               </div>
             ))

@@ -7,7 +7,7 @@ export default function ProductFormModal({ isOpen, onClose, onSave, product }) {
     price: '',
     category: '',
     brand: '',
-    isFeatured: false, // Ensure this starts as a boolean
+    isFeatured: false,
     description: '',
     imageUrl: '',
     stock: ''

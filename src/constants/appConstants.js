@@ -20,7 +20,7 @@ export const UI_STRINGS = {
   HERO_TITLE: 'Best Deals',
   HERO_SUBTITLE: 'High-performance electronics',
   FOOTER_TEXT: 'Developed by WJL',
-  SECURE_PAYMENT: 'Secure Checkout via Stripe', // Fixed spelling of Stripe
+  SECURE_PAYMENT: 'Secure Checkout via Stripe',
   EMPTY_CART: 'Your cart is empty. Start shopping!',
 };
 

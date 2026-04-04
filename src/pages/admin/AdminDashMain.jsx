@@ -7,19 +7,21 @@ import ProductFormModal from './ProductFormModal';
 import Toast from './Toast'; // Ensure this matches your file path
 
 export default function AdminDashboard() {
-  const [products, setProducts] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [toast, setToast] = useState(null);
+  /* --- 1. STATE MANAGEMENT --- */
+  const [products, setProducts] = useState([]);      // The master list of inventory
+  const [isModalOpen, setIsModalOpen] = useState(false); // Controls the Add/Edit popup
+  const [selectedProduct, setSelectedProduct] = useState(null); // Data for the product being edited
+  const [toast, setToast] = useState(null);           // Success/Error notification state
 
+  // Fetch inventory immediately when the admin logs in
   useEffect(() => {
     fetchProducts();
   }, []);
 
+  /* --- 2. DATA ACQUISITION --- */
   const fetchProducts = async () => {
     try {
       const response = await fetch(`${APP_CONFIG.API_URL}/products`);
-      if (!response.ok) throw new Error('Network response was not ok');
       const data = await response.json();
       setProducts(data);
     } catch (err) {
@@ -30,6 +32,8 @@ export default function AdminDashboard() {
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
   };
+
+  /* --- 3. CRUD OPERATIONS (The Core Logic) --- */
 
   // --- TRIGGER FUNCTIONS ---
   
@@ -44,13 +48,14 @@ export default function AdminDashboard() {
   };
 
   // --- API OPERATIONS ---
-
+  // SAVE (Create or Update)
   const handleSaveProduct = async (formData) => {
     try {
+      // Security: Fetch the token to prove Admin identity to the backend
       const session = await fetchAuthSession();
       const token = session.tokens?.idToken?.toString();
       
-      const isEdit = !!selectedProduct;
+      const isEdit = !!selectedProduct; // If we have a selectedProduct, we are EDITING
       const url = isEdit 
         ? `${APP_CONFIG.API_URL}/products/${selectedProduct.productId}` 
         : `${APP_CONFIG.API_URL}/products`;
@@ -60,6 +65,7 @@ export default function AdminDashboard() {
         ? { ...formData, productId: selectedProduct.productId } 
         : formData;
 
+      // We use PUT for updates and POST for new items
       const res = await fetch(url, {
         method: isEdit ? 'PUT' : 'POST',
         headers: {
@@ -70,8 +76,8 @@ export default function AdminDashboard() {
       });
 
       if (res.ok) {
-        fetchProducts();
-        setIsModalOpen(false);
+        fetchProducts(); // Refresh the list
+        setIsModalOpen(false); // Close the form
         showToast(isEdit ? "Product Updated" : "Product Created");
       } else {
         const errorData = await res.json();
@@ -84,6 +90,7 @@ export default function AdminDashboard() {
     }
   };
 
+  // DELETE
   const handleDeleteProduct = async (productId) => {
     if (!window.confirm("Are you sure you want to delete this product?")) return;
 
@@ -97,7 +104,7 @@ export default function AdminDashboard() {
       });
 
       if (res.ok) {
-        // Immediate UI update
+        // UI update: Remove from local state immediately
         setProducts(prev => prev.filter(p => p.productId !== productId));
         showToast("Product Deleted", "success");
       } else {
@@ -111,6 +118,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex min-h-screen bg-zinc-50">
+      {/* --- SIDEBAR NAVIGATION --- */}
       <aside className="w-64 bg-zinc-900 text-white p-6 flex flex-col">
         <h2 className="text-xl font-black italic tracking-tighter mb-8">
           ELECTROTECH ADMIN
@@ -139,7 +147,7 @@ export default function AdminDashboard() {
         </nav>
         
       </aside>
-
+      {/* --- MAIN CONTENT AREA --- */}
       <main className="flex-1 p-8">
         <div className="flex justify-between items-center mb-8">
           <div>
@@ -153,7 +161,7 @@ export default function AdminDashboard() {
             <Plus size={18} /> Add Product
           </button>
         </div>
-
+        {/* --- INVENTORY TABLE --- */}
         <div className="bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-zinc-200">
           <table className="w-full text-left">
             <thead className="bg-zinc-900 text-white">
@@ -179,12 +187,14 @@ export default function AdminDashboard() {
                   <td className="p-6 font-black text-rose-600">${product.price}</td>
                   <td className="p-6">
                     <div className="flex justify-center gap-3">
+                      {/* EDIT TRIGGER */}
                       <button 
                         onClick={() => handleOpenEdit(product)}
                         className="p-3 hover:bg-zinc-900 hover:text-white rounded-xl text-zinc-400 transition-all active:scale-90"
                       >
                         <Edit size={18} />
                       </button>
+                      {/* DELETE TRIGGER */}
                       <button 
                         onClick={() => handleDeleteProduct(product.productId)}
                         className="p-3 hover:bg-rose-50 rounded-xl text-rose-600 transition-all active:scale-90"

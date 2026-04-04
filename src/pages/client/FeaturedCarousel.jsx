@@ -1,24 +1,32 @@
 import React, { useState, useEffect } from 'react';
 
 const FeaturedCarousel = ({ ads, onShopNow }) => {
+  /* --- 1. SLIDE STATE --- */
+  // Tracks the index of the currently visible featured product.
   const [current, setCurrent] = useState(0);
 
-  // Auto-play logic
+  /* --- 2. AUTO-PLAY LOGIC --- */
   useEffect(() => {
+    // Safety check: Don't start a timer if there's only one ad or none.
     if (!ads || ads.length <= 1) return;
     
+    // Logic: Increment the index every 5 seconds. 
+    // If we reach the end of the array, loop back to 0.
     const timer = setInterval(() => {
       setCurrent((prev) => (prev === ads.length - 1 ? 0 : prev + 1));
     }, 5000);
     
+    /* CLEANUP: Crucial to prevent memory leaks or multiple timers 
+       running simultaneously when the component re-renders. */
     return () => clearInterval(timer);
   }, [ads]);
 
-  // Reset index if ads change (e.g. during filtering)
+  // Reset index if ads change to avoid "out of bounds" errors.
   useEffect(() => {
     setCurrent(0);
   }, [ads?.length]);
 
+  /* --- 4. LOADING / EMPTY STATE --- */
   if (!ads || ads.length === 0) {
     return <div className="h-[500px] bg-zinc-100 animate-pulse rounded-3xl" />;
   }
@@ -29,7 +37,7 @@ const FeaturedCarousel = ({ ads, onShopNow }) => {
     <div className="relative w-full h-[500px] overflow-hidden bg-zinc-900 text-white rounded-3xl group">
       <div className="container mx-auto h-full flex flex-col md:flex-row items-center justify-between px-12">
         
-        {/* Content */}
+        {/* --- 5. ANIMATED CONTENT AREA --- */}
         <div className="flex-1 space-y-4 z-10 animate-in fade-in slide-in-from-left-4 duration-700">
           <span className="text-rose-500 font-black uppercase tracking-[0.3em] text-xs">
             Featured Deal
@@ -48,7 +56,7 @@ const FeaturedCarousel = ({ ads, onShopNow }) => {
           </button>
         </div>
 
-        {/* Image */}
+        {/* --- 6. DYNAMIC IMAGE DISPLAY --- */}
         <div className="flex-1 flex justify-center items-center h-full relative">
           <img 
             key={currentAd.productId} // Key helps trigger animation on slide change
@@ -59,12 +67,13 @@ const FeaturedCarousel = ({ ads, onShopNow }) => {
         </div>
       </div>
 
-      {/* Dots */}
+      {/* --- 7. NAVIGATION INDICATORS (DOTS) --- */}
       <div className="absolute bottom-8 right-12 flex gap-2">
         {ads.map((_, i) => (
           <button 
             key={i} 
             onClick={() => setCurrent(i)}
+            /* Active dot is wider (w-12) and rose-colored, others are small zinc bars */
             className={`h-1 transition-all duration-300 ${current === i ? 'w-12 bg-rose-500' : 'w-4 bg-zinc-700 hover:bg-zinc-500'}`}
           />
         ))}

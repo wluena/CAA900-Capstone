@@ -71,6 +71,8 @@ const ProductModal = ({ product, onClose, onAdd }) => {
             <div className="text-right">
               <p className="text-[10px] font-bold text-zinc-400 uppercase mb-1">Warranty</p>
               <p className="text-xs font-black uppercase">{product.warranty || '2 Years'}</p>
+              <p className="text-[10px] font-bold text-zinc-400 uppercase mb-1">Stocks</p>
+              <p className="text-xs font-black uppercase">{product.stock}</p>
             </div>
           </div>
 

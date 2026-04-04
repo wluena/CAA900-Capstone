@@ -1,9 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
+
+/* --- 1. COMPONENT & HOOK IMPORTS --- */
+// Import libraries
 import { Loader2, AlertCircle } from 'lucide-react';
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import { fetchAuthSession } from 'aws-amplify/auth';
 
-// LAYOUT & UI (Go up TWO levels: out of home, out of pages)
+// LAYOUT & UI
 import NavBar from '../../components/layout/NavBar.jsx'; 
 import Footer from '../../components/layout/Footer.jsx';
 import AuthModal from '../../features/auth/AuthModal.jsx';
@@ -17,15 +20,17 @@ import CartDrawer from "./CartDrawer.jsx";
 import OrdersDrawer from "./OrdersDrawer.jsx";
 import FeaturedCarousel from './FeaturedCarousel.jsx';
 
-// HOOKS & CONSTANTS (Go up TWO levels)
+// HOOKS & CONSTANTS
 import { useProducts } from '../../hooks/useProducts.js';
 import { useCart } from '../../hooks/useCart.js';
 import { APP_CONFIG, CATEGORIES, UI_STRINGS } from '../../constants/appConstants.js';
 
 export default function Home() {
+  /* --- 2. GLOBAL AUTHENTICATION --- */
+  // Accesses the Cognito user state. 'authUser' tells us if the user is logged in.
   const { user: authUser, signOut: amplifySignOut} = useAuthenticator((context) => [context.user]);
   
-  // UI States
+  /* --- 3. UI STATE MANAGEMENT --- */
   const [activeCategory, setActiveCategory] = useState(CATEGORIES[0]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -36,36 +41,29 @@ export default function Home() {
   const [orders, setOrders] = useState([]);
   const [token, setToken] = useState(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  // Data Hooks
   const { products, isLoading, error } = useProducts();
-  const { cart, addToCart, removeFromCart, clearCart, cartCount } = useCart(setShowCartDrawer);
+  const { cart, addToCart, removeFromCart, updateQty, clearCart, cartCount } = useCart(setShowCartDrawer);  
 
-  // Create the featured list
-  const featuredProducts = useMemo(() => {
-    if (!products) return [];
-    return products.filter(p => 
-      p.isFeatured === true || 
-      p.isFeatured === "true" ||
-      p.isFeatured === 1
-    );
-  }, [products]);
-
-  // --- STRIPE SUCCESS DETECTION ---
+  /* --- 4. STRIPE SUCCESS DETECTION (POST-PAYMENT) --- */
   useEffect(() => {
+    // Check the URL for '?success=true' redirected from Stripe
     const query = new URLSearchParams(window.location.search);
     if (query.get('success') === 'true') {
-      clearCart(); 
-      setShowSuccess(true);
-      setShowCartDrawer(false);
+      clearCart();  // Wipe the local cart state
+      setShowSuccess(true); // Trigger the "Payment Received" visual overlay
+      setShowCartDrawer(false); 
+      // Clean up the URL so the success message doesn't reappear on refresh
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, [clearCart]);
 
-  // --- SECURE MY ORDERS FETCHING ---
+  /* --- 5. AUTHORIZED DATA FETCHING --- */
   const fetchOrders = async () => {
+    // Security: If not logged in, prompt the AuthModal
     if (!authUser) return setShowAuthModal(true);
 
     try {
+      // Retrieve the fresh from the current Cognito session
       const session = await fetchAuthSession();
       const token = session.tokens?.idToken?.toString();
       setToken(session.tokens)
@@ -74,7 +72,7 @@ export default function Home() {
         return setShowAuthModal(true);
       }
 
-      // We no longer pass ?userId= in the URL. Lambda gets it from the token!
+      // Secure API Call: Passing the Bearer Token to the Lambda via API Gateway
       const res = await fetch(`${APP_CONFIG.API_URL}/my-orders`, {
         method: 'GET',
         headers: {
@@ -95,7 +93,7 @@ export default function Home() {
       console.error("Order fetch failed:", err);
     }
   };
-
+  
   const handleOpenProductModal = (productId) => {
     const product = products.find(p => p.productId === productId);
     if (product) setSelectedProduct(product);
@@ -107,6 +105,16 @@ export default function Home() {
       p.name?.toLowerCase().includes(searchQuery.toLowerCase())
     ));
   }, [products, activeCategory, searchQuery]);
+
+  // Create the featured list
+  const featuredProducts = useMemo(() => {
+    if (!products) return [];
+    return products.filter(p => 
+      p.isFeatured === true || 
+      p.isFeatured === "true" ||
+      p.isFeatured === 1
+    );
+  }, [products]);
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -172,7 +180,7 @@ export default function Home() {
 
       {/* MODALS & DRAWERS */}
       <ProductModal product={selectedProduct} onClose={() => setSelectedProduct(null)} onAdd={addToCart} />
-      <CartDrawer isOpen={showCartDrawer} cart={cart} user={authUser} onClose={() => setShowCartDrawer(false)} onRemove={removeFromCart} onClearCart={clearCart} />
+      <CartDrawer isOpen={showCartDrawer} cart={cart} user={authUser} onClose={() => setShowCartDrawer(false)} onRemove={removeFromCart} onClearCart={clearCart} onUpdateQty={updateQty}  />
       <OrdersDrawer isOpen={showOrdersDrawer} onClose={() => setShowOrdersDrawer(false)} orders={orders} />
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
       <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} user={authUser} />

@@ -1,15 +1,19 @@
 import React from 'react';
-import { X, Trash2, ShoppingBag, Lock } from 'lucide-react'; // Added Lock icon
-import { Authenticator } from '@aws-amplify/ui-react'; // Import this
+import { X, Plus, Minus, Trash2, ShoppingBag, Lock } from 'lucide-react';
+import { Authenticator } from '@aws-amplify/ui-react';
 import Checkout from './Checkout';
 
-export default function CartDrawer({ isOpen, onClose, cart, onRemove, onClearCart, user }) {
+// Added onUpdateQty to the props
+export default function CartDrawer({ isOpen, onClose, cart, onRemove, onUpdateQty, onClearCart, user }) {
+  // 1. CONDITIONAL RENDERING: Ensure the component doesn't render if it's closed
   if (!isOpen) return null;
 
+  // 2. LIVE CALCULATION: Recalculates the total price every time the cart state changes
   const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
+      {/* 3. BACKDROP: Dims the background and allows 'Click-to-Close' functionality */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
 
       <div className="absolute inset-y-0 right-0 max-w-full flex">
@@ -26,76 +30,115 @@ export default function CartDrawer({ isOpen, onClose, cart, onRemove, onClearCar
             </button>
           </div>
 
-          {/* ITEM LIST */}
+          {/* --- ITEM LIST --- */}
           <div className="flex-1 overflow-y-auto p-6">
             {cart.length === 0 ? (
+              /* EMPTY STATE: Visual for an empty cart */
               <div className="h-full flex flex-col items-center justify-center text-center opacity-40">
                 <ShoppingBag size={48} className="mb-4" />
                 <p className="text-[10px] font-black uppercase">Your cart is empty</p>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-8">
                 {cart.map((item) => (
-                  <div key={item.productId} className="flex items-center gap-4">
-                    <img src={item.imageUrl} alt={item.name} className="w-16 h-16 object-cover rounded-lg bg-zinc-50" />
-                    <div className="flex-1">
-                      <h4 className="text-[11px] font-black uppercase leading-tight">{item.name}</h4>
-                      <p className="text-[10px] text-zinc-400 font-bold uppercase">Qty: {item.qty} • ${item.price}</p>
+                  <div key={item.productId} className="flex items-start gap-4 group">
+                    <img src={item.imageUrl} alt={item.name} className="w-20 h-20 object-cover rounded-lg bg-zinc-50 border border-zinc-100" />
+                    
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-[11px] font-black uppercase leading-tight truncate">{item.name}</h4>
+                      <p className="text-[10px] text-rose-500 font-black mt-1">${item.price.toLocaleString()}</p>
+                      
+                      {/* 4. QUANTITY CONTROLS WITH VALIDATION logic */}
+                        <div className="flex items-center gap-4 mt-3">
+                          <div className="flex items-center bg-zinc-100 rounded-full p-1 border border-zinc-200">
+                            {/* Decrement: Disabled if quantity is 1 */}
+                            <button 
+                              onClick={() => onUpdateQty(item.productId, item.qty - 1)}
+                              disabled={item.qty <= 1}
+                              className="p-1 hover:bg-white hover:text-rose-500 rounded-full transition-all disabled:opacity-20"
+                            >
+                              <Minus size={12} />
+                            </button>
+                            
+                            <span className="text-[10px] font-black w-8 text-center tabular-nums">
+                              {item.qty}
+                            </span>
+                            
+                            {/* Increment: Disabled if requested qty exceeds the stock from DynamoDB */}
+                            <button 
+                              onClick={() => onUpdateQty(item.productId, item.qty + 1)}
+                              disabled={item.qty >= (item.stock || 0)}
+                              className={`p-1 rounded-full transition-all ${
+                                item.qty >= (item.stock || 0) 
+                                  ? "opacity-20 cursor-not-allowed" 
+                                  : "hover:bg-white hover:text-rose-500"
+                              }`}
+                            > 
+                              <Plus size={12} />
+                            </button>
+                          </div>
+
+                          <button 
+                            onClick={() => onRemove(item.productId)} 
+                            className="text-zinc-300 hover:text-rose-600 transition-colors"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+
+                        {/* 5. STOCK INDICATOR: Real-time inventory warning */}
+                        {item.qty >= (item.stock || 0) && (
+                          <p className="text-[8px] font-black text-rose-500 uppercase mt-1 animate-pulse">
+                            Max Stock Reached
+                          </p>
+                        )}
                     </div>
-                    <button onClick={() => onRemove(item.productId)} className="p-2 text-zinc-300 hover:text-rose-500 transition-colors">
-                      <Trash2 size={16} />
-                    </button>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          {/* FOOTER & CHECKOUT GATE */}
+          {/* --- FOOTER & CHECKOUT GATE --- */}
           {cart.length > 0 && (
             <div className="p-6 border-t border-zinc-100 bg-zinc-50/50">
               <div className="flex justify-between mb-6">
-                <span className="font-bold text-zinc-400 uppercase text-[10px]">Total Amount</span>
-                <span className="font-black text-xl">${total.toLocaleString()}</span>
+                <span className="font-bold text-zinc-400 uppercase text-[10px] tracking-widest">Subtotal</span>
+                <span className="font-black text-xl tracking-tighter">${total.toLocaleString()}</span>
               </div>
               
+              {/* 6. SECURITY GATE: Only shows the Checkout button if the user is signed in */}
               {user ? (
-                /* 1. LOGGED IN: Show the Checkout Component */
                 <Checkout 
                   cart={cart} 
-                  userId={user?.userId} // Pass the whole user object
-                  userEmail={user?.signInDetails?.loginId || user?.attributes?.email} // Add this
+                  userId={user?.userId}
+                  userEmail={user?.signInDetails?.loginId || user?.attributes?.email}
                   onClearCart={onClearCart} 
                   onSuccess={(orderId) => {
-                    onClose();
-                    // Using a slice for a cleaner ID display
-                    const displayId = String(orderId).slice(0, 8).toUpperCase();
-                    alert(`ORDER #${displayId} PLACED SUCCESSFULLY!`);
+                    onClose(); // Close drawer on successful order
                   }}
                 />
               ) : (
-                /* 2. GUEST: Show the Login Gate */
+                /* 7. IN-DRAWER AUTH: Inline login prompt to reduce friction */
                 <div className="space-y-4">
-                    <div className="flex items-center justify-center gap-2 py-2 bg-rose-50 rounded-lg text-rose-600">
+                    <div className="flex items-center justify-center gap-2 py-3 bg-rose-50 rounded-lg text-rose-600 border border-rose-100">
                         <Lock size={12} />
-                        <span className="text-[9px] font-black uppercase tracking-widest">Login required for checkout</span>
+                        <span className="text-[9px] font-black uppercase tracking-widest italic">Authorization Required for Checkout</span>
                     </div>
-                    {/* This renders the login form right inside the drawer */}
-                    <Authenticator>
-                        {({ signOut, user }) => (
-                            <div className="pt-4 text-center">
-                                <p className="text-[10px] font-bold mb-4">Logged in! Ready to complete your order.</p>
-                                {/* We don't need a button here; as soon as Authenticator completes, 
-                                    the parent component (App.jsx) will update the 'user' prop 
-                                    and the 'Checkout' component will appear above. */}
-                            </div>
-                        )}
-                    </Authenticator>
+                    <div className="amplify-auth-compact">
+                      <Authenticator>
+                          {({ signOut, user }) => (
+                              <div className="pt-2 text-center">
+                                  <p className="text-[10px] font-black uppercase text-zinc-400">Identity Verified</p>
+                              </div>
+                          )}
+                      </Authenticator>
+                    </div>
                 </div>
               )}
               
-              <p className="text-center text-[9px] text-zinc-400 mt-4 font-bold uppercase tracking-widest">
-                Secure Checkout via Stripe
+              <p className="text-center text-[9px] text-zinc-400 mt-6 font-bold uppercase tracking-[0.3em] opacity-50">
+                Encrypted Transaction via Stripe
               </p>
             </div>
           )}
